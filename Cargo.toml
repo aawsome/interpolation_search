@@ -1,6 +1,6 @@
 [package]
 name = "interpolation_search"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "GLWTPL"
 description = "Interpolation search - binary search on steroids."
