@@ -22,8 +22,8 @@
 //! }
 //! ```
 
-mod linear;
-mod scalable;
+pub mod linear;
+pub mod scalable;
 
 use linear::Linear;
 use scalable::Scalable;
