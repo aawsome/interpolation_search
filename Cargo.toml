@@ -2,5 +2,10 @@
 name = "interpolation_search"
 version = "0.1.0"
 edition = "2021"
+license = "GLWTPL"
+description = "Interpolation search - binary search on steroids."
+repository = "https://github.com/vgasparyan1995/interpolation_search"
+keywords = ["interpolation", "search", "binary", "sorted", "algorithms"]
+categories = ["algorithms", "data-structures"]
 
 [dependencies]
