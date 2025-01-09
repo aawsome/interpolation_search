@@ -50,6 +50,17 @@ impl Scalable for Duration {
     }
 }
 
+impl Scalable for Vec<u8> {
+    fn fraction_of(&self, other: &Self) -> f32 {
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| a.fraction_of(&b))
+            .enumerate()
+            .map(|(idx, f)| f * (u16::MAX as f32).powi(-(idx as i32)))
+            .sum()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

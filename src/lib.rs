@@ -201,7 +201,6 @@ mod tests {
         assert_eq!(normalize(f32::NEG_INFINITY), 0.5);
         assert_eq!(normalize(f32::MIN_POSITIVE), f32::MIN_POSITIVE);
 
-        //checking for subnormal numbers
         assert_eq!(normalize(f32::MIN_POSITIVE / 2.0), 0.5);
         assert_eq!(normalize(f32::MIN_POSITIVE * -1.0 / 2.0), 0.5);
     }
@@ -229,5 +228,29 @@ mod tests {
 
         assert_eq!(lerp_len(10, f32::MIN_POSITIVE / 2.0), 5);
         assert_eq!(lerp_len(10, f32::MIN_POSITIVE * -1.0 / 2.0), 5);
+    }
+
+    #[test]
+    fn test_str_interpolation_search() {
+        let strings = vec!["apple", "banana", "cherry", "date", "elderberry"];
+
+        assert_eq!(strings.interpolation_search(&"apple"), Ok(0));
+        assert_eq!(strings.interpolation_search(&"date"), Ok(3));
+        assert_eq!(strings.interpolation_search(&"grape"), Err(5));
+        assert_eq!(strings.interpolation_search(&"apricot"), Err(1));
+        assert_eq!(strings.interpolation_search(&"bat"), Err(2));
+
+        let empty_strings: Vec<&str> = Vec::new();
+        assert_eq!(empty_strings.interpolation_search(&"anything"), Err(0));
+
+        let single_string = vec!["only"];
+        assert_eq!(single_string.interpolation_search(&"only"), Ok(0));
+        assert_eq!(single_string.interpolation_search(&"aaa"), Err(0));
+        assert_eq!(single_string.interpolation_search(&"zzz"), Err(1));
+
+        let repeated_strings = vec!["same", "same", "same"];
+        assert!(repeated_strings
+            .interpolation_search(&"same")
+            .is_ok_and(|n| n < 3));
     }
 }

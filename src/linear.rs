@@ -1,4 +1,7 @@
-use std::time::{Duration, SystemTime};
+use std::{
+    str::Chars,
+    time::{Duration, SystemTime},
+};
 
 use crate::Scalable;
 
@@ -78,6 +81,28 @@ impl Linear<Duration> for SystemTime {
     }
 }
 
+impl Linear<Vec<u8>> for Chars<'_> {
+    fn distance_to(&self, other: &Self) -> Vec<u8> {
+        self.clone()
+            .zip(other.clone())
+            .map(|(a, b)| a.distance_to(&b))
+            .map(|d| d.min(u8::MAX.into()) as u8)
+            .collect()
+    }
+}
+
+impl Linear<Vec<u8>> for &str {
+    fn distance_to(&self, other: &Self) -> Vec<u8> {
+        self.chars().distance_to(&other.chars())
+    }
+}
+
+impl Linear<Vec<u8>> for String {
+    fn distance_to(&self, other: &Self) -> Vec<u8> {
+        self.chars().distance_to(&other.chars())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +135,17 @@ mod tests {
         let future = now + five_sec;
         assert_eq!(now.distance_to(&future), five_sec);
         assert_eq!(now.distance_to(&now), Duration::ZERO);
+    }
+    #[test]
+    fn test_str_distance() {
+        assert_eq!("".distance_to(&""), Vec::new());
+        assert_eq!("a".distance_to(&"a"), vec![0]);
+        assert_eq!("a".distance_to(&"b"), vec![1]);
+        assert_eq!("ab".distance_to(&"ac"), vec![0, 1]);
+        assert_eq!("abc".distance_to(&"abd"), vec![0, 0, 1]);
+        assert_eq!("abc".distance_to(&"dbd"), vec![3, 0, 1]);
+        assert_eq!("աբգ".distance_to(&"աբդ"), vec![0, 0, 1]);
+        assert_eq!("ab".distance_to(&"a"), vec![0]);
+        assert_eq!("a".distance_to(&"abc"), vec![0]);
     }
 }
