@@ -1,0 +1,4 @@
+1. Add readme and docs.rs comments for implementing the two traits for a custom struct to enable inteprolation search on it.
+1. Add readme and docs.rs comments for using the newtype pattern for redifining `Linear` and/or `Scalable` for foreign types.
+1. Try implementing it for tuples.
+1. Implemnt `_by` and `_by_key` alternatives like binary_search.

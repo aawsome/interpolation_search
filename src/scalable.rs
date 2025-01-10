@@ -3,7 +3,7 @@ use std::time::Duration;
 /// Extends the duration type with a `fraction_of` method.
 ///
 /// Interpolation search uses linear interpolation to estimate the index of the target. The
-/// items in the array must be [`Linear`][Linear], and the distance between the items must be
+/// items in the array must be [`Linear`][interpolation_search::linear::Linear], and the distance between the items must be
 /// `Scalable`. Given an array `[first, .. , last]` and a `target`, where `first < target < last`,
 /// the algorithm needs to know the fraction of `first.distance_to(target)` in
 /// `first.distance_to(last)`.
