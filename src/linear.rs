@@ -19,7 +19,7 @@ use crate::Scalable;
 /// # Examples
 ///
 /// ```
-/// use interpolation_search::linear::Linear;
+/// use interpolation_search::Linear;
 /// use std::time::{Duration, SystemTime};
 ///
 /// assert_eq!(5_u8.distance_to(&10_u8), 5_u8);
