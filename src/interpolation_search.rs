@@ -8,10 +8,10 @@ pub trait InterpolationSearch<T, V> {
     fn interpolation_search(&self, target: &T) -> Result<usize, usize>;
 }
 
-impl<T, V> InterpolationSearch<T, V> for [T]
+impl<T, D> InterpolationSearch<T, D> for [T]
 where
-    T: Ord + Linear<V>,
-    V: Scalable,
+    T: Ord + Linear<D>,
+    D: Scalable,
 {
     fn interpolation_search(&self, target: &T) -> Result<usize, usize> {
         match self {
