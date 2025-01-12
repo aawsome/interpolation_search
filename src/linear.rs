@@ -29,6 +29,8 @@ use crate::Scalable;
 /// assert_eq!(t0.distance_to(&t1), five_sec);
 /// ```
 pub trait Linear<Distance: Scalable = Self> {
+    /// Returns the distance between `self` and `other`. The distance is of type `Distance` which
+    /// is `Self` by default.
     fn distance_to(&self, other: &Self) -> Distance;
 }
 

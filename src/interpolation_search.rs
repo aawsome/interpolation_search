@@ -5,6 +5,20 @@ use std::cmp::{
 };
 
 pub trait InterpolationSearch<T, V> {
+    /// Interpolation searches this slice for a given element. If the slice is not sorted, the returned result is unspecified and meaningless.
+    ///
+    /// The interface of this funciton is similar to its `binary_search` counterpart. If the value is found then `Result::Ok` is returned, containing the index of the matching element. If there are multiple matches, then any one of the matches could be returned. The index is chosen deterministically, but is subject to change in future versions of the crate. If the value is not found then `Result::Err` is returned, containing the index where a matching element could be inserted while maintaining sorted order.
+    ///
+    /// **Examples**
+    ///
+    /// ```
+    /// use interpolation_search::InterpolationSearch;
+    ///
+    /// let arr = [0, 1, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+    ///
+    /// assert_eq!(arr.interpolation_search(&13), Ok(9));
+    /// assert_eq!(arr.interpolation_search(&14), Err(10));
+    /// ```
     fn interpolation_search(&self, target: &T) -> Result<usize, usize>;
 }
 

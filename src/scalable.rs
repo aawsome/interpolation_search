@@ -18,6 +18,8 @@ use std::time::Duration;
 /// assert_eq!(Duration::from_secs(1).fraction_of(&Duration::from_secs(2)), 0.5);
 /// ```
 pub trait Scalable {
+    /// Returns what fraction of `other` is `self`. `other` is expected to be larger than `self`,
+    /// thus the result is expected to be in the `[0.0, 1.0]` range.
     fn fraction_of(&self, other: &Self) -> f32;
 }
 
