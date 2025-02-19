@@ -17,12 +17,12 @@
 //!
 //! # Enabling Interpolation Search for user-defined types
 //!
-//! [`InterpolationSearch`] requires the items in the array to be [`Ord`] and [`Linear`] over some `Distance` type, such that `Distance` is [`Scalable`].
+//! [`InterpolationSearch`] requires the items in the array to be [`Ord`] and [`InterpolationFactor`].
 //!
-//! Consider a simple struct that represents points on a cartesian grid, an `(x, y)` pair. To have them sorted in an array they must be [`Ord`], of course, which can be simply derived. Then we implement [`Linear`] for this type.
+//! Consider a simple struct that represents points on a cartesian grid, an `(x, y)` pair. To have them sorted in an array they must be [`Ord`], of course, which can be simply derived. Then we implement [`InterpolationFactor`] for this type.
 //!
 //! ```
-//! use interpolation_search::{InterpolationSearch, Linear};
+//! use interpolation_search::InterpolationFactor;
 //!
 //! #[derive(PartialEq, Eq, PartialOrd, Ord)]
 //! struct Point2D {
@@ -30,55 +30,46 @@
 //!     y: i32,
 //! }
 //!
-//! impl Linear<u64> for Point2D {
-//!     fn distance_to(&self, other: &Self) -> u64 {
-//!         let dx = self.x.distance_to(&other.x) as u64;
-//!         let dy = self.y.distance_to(&other.y) as u64;
-//!         dx << 32 + dy
+//! impl InterpolationFactor for Point2D {
+//!     fn interpolation_factor(&self, a: &Self, b: &Self) -> f32 {
+//!         if a.x != b.x {
+//!             self.x.interpolation_factor(&a.x, &b.x)
+//!         } else {
+//!             self.y.interpolation_factor(&a.y, &b.y)
+//!         }
 //!     }
 //! }
 //! ```
 //!
-//! This crate already implements [`Scalable`] for `u64`.
-//!
-//! Here's another example where both [`Linear`] and [`Scalable`] must be implemented for the type. Consider a tuple of 3 bytes that represent an RGB color.
+//! Here's another example where the implementation depends on that on the basic types. Consider a tuple of 3 bytes that represent an RGB color.
 //!
 //! ```
-//! use interpolation_search::{InterpolationSearch, Linear, Scalable};
+//! use interpolation_search::InterpolationFactor;
 //!
 //! #[derive(PartialEq, Eq, PartialOrd, Ord)]
 //! struct Rgb(u8, u8, u8);
 //!
-//! impl Linear for Rgb {
-//!     fn distance_to(&self, other: &Self) -> Self {
-//!         Self(
-//!             self.0.distance_to(&other.0),
-//!             self.1.distance_to(&other.1),
-//!             self.2.distance_to(&other.2),
-//!         )
-//!     }
-//! }
-//!
-//! impl Scalable for Rgb {
-//!     fn fraction_of(&self, other: &Self) -> f32 {
-//!         self.0.fraction_of(&other.0)
-//!             + self.1.fraction_of(&other.1) * 256.0_f32.powi(-1)
-//!             + self.2.fraction_of(&other.2) * 256.0_f32.powi(-2)
+//! impl InterpolationFactor for Rgb {
+//!     fn interpolation_factor(&self, a: &Self, b: &Self) -> f32 {
+//!         if a.0 != b.0 {
+//!             self.0.interpolation_factor(&a.0, &b.0)
+//!         } else if a.1 != b.1 {
+//!             self.1.interpolation_factor(&a.1, &b.1)
+//!         } else {
+//!             self.2.interpolation_factor(&a.2, &b.2)
+//!         }
 //!     }
 //! }
 //! ```
 //!
-//! >Note: we couldn't just implement [`Linear`] and [`Scalable`] for the tuple `(u8, u8, u8)` as it's a foreign type. We're using the well-known [newtype idiom](https://doc.rust-lang.org/rust-by-example/generics/new_types.html).
+//! >Note: we couldn't just implement [`InterpolationFactor`] for the tuple `(u8, u8, u8)` as it's a foreign type. We're using the well-known [newtype idiom](https://doc.rust-lang.org/rust-by-example/generics/new_types.html).
 //!
 //! # Consistency
 //!
-//! The [`Linear`] property of a type must be consistent with its [`Ord`]. That is, for `a <= b <= c` must follow `a.distance_to(b) <= a.distance_to(c)`. Consequently, `a.distance_to(b).fraction_of(a.distance_to(c))` must be in the `[0.0, 1.0]` range.
-//!
+//! The [`InterpolationFactor`] property of a type must be consistent with its [`Ord`]. That is, for `a, b, c`, where `a <= b <= c`, `b.interpolation_factor(a, c)` must be in the `[0.0, 1.0]` range.
 
+mod interpolation_factor;
 mod interpolation_search;
-mod linear;
-mod scalable;
 
+pub use interpolation_factor::InterpolationFactor;
 pub use interpolation_search::InterpolationSearch;
-pub use linear::Linear;
-pub use scalable::Scalable;
