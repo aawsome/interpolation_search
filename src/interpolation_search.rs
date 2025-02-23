@@ -224,7 +224,6 @@ mod tests {
         assert_eq!(lerp_len(10, f32::MIN_POSITIVE * -1.0 / 2.0), 5);
     }
 
-    /*
     #[test]
     fn test_str_interpolation_search() {
         let strings = vec!["apple", "banana", "cherry", "date", "elderberry"];
@@ -248,5 +247,4 @@ mod tests {
             .interpolation_search(&"same")
             .is_ok_and(|n| n < 3));
     }
-    */
 }

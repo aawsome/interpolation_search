@@ -93,7 +93,7 @@ impl InterpolationFactor for Chars<'_> {
     }
 }
 
-impl InterpolationFactor for str {
+impl InterpolationFactor for &str {
     fn interpolation_factor(&self, a: &Self, b: &Self) -> f32 {
         self.chars().interpolation_factor(&a.chars(), &b.chars())
     }
