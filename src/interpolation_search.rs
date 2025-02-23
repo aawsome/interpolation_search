@@ -31,7 +31,6 @@ where
         let mut last_idx = self.len();
         let mut bisect = false;
         loop {
-            println!("[{first_idx}, {last_idx})");
             match &self[first_idx..last_idx] {
                 [] => return Err(first_idx),
                 [first, ..] if target < first => return Err(first_idx),
@@ -44,7 +43,7 @@ where
                         target.interpolation_factor(&first, &last)
                     };
                     bisect = !bisect;
-                    let mid_idx = first_idx + lerp_len(last_idx - first_idx, f);
+                    let mid_idx = lerp_idx(first_idx, last_idx, f);
                     let mid = &self[mid_idx];
                     match mid.cmp(target) {
                         Equal => return Ok(mid_idx),
@@ -58,12 +57,12 @@ where
     }
 }
 
-// TODO: Replace `lerp_len` with `lerp_idx`.
-fn lerp_len(len: usize, f: f32) -> usize {
-    match len {
-        0 | 1 => 0,
-        _ => ((len as f32 * normalize(f)) as usize).min(len - 1),
+// Returns an index in a given inclusive-exclusive index range (`[first, last)`).
+fn lerp_idx(first: usize, last: usize, f: f32) -> usize {
+    if first >= last {
+        return first;
     }
+    (first + ((last - first) as f32 * normalize(f)) as usize).min(last - 1)
 }
 
 fn normalize(f: f32) -> f32 {
@@ -200,28 +199,33 @@ mod tests {
     }
 
     #[test]
-    fn test_lerp_len() {
-        assert_eq!(lerp_len(10, 0.0), 0);
-        assert_eq!(lerp_len(10, 1.0), 9);
-        assert_eq!(lerp_len(10, 0.5), 5);
-        assert_eq!(lerp_len(10, 0.25), 2);
-        assert_eq!(lerp_len(10, 0.75), 7);
+    fn test_lerp_idx() {
+        assert_eq!(lerp_idx(0, 10, 0.0), 0);
+        assert_eq!(lerp_idx(0, 10, 1.0), 9);
+        assert_eq!(lerp_idx(0, 10, 0.5), 5);
+        assert_eq!(lerp_idx(0, 10, 0.25), 2);
+        assert_eq!(lerp_idx(0, 10, 0.75), 7);
 
-        assert_eq!(lerp_len(1, 0.0), 0);
-        assert_eq!(lerp_len(1, 1.0), 0);
+        assert_eq!(lerp_idx(0, 1, 0.0), 0);
+        assert_eq!(lerp_idx(0, 1, 1.0), 0);
 
-        assert_eq!(lerp_len(0, 0.0), 0);
-        assert_eq!(lerp_len(0, 1.0), 0);
+        assert_eq!(lerp_idx(0, 0, 0.0), 0);
+        assert_eq!(lerp_idx(0, 0, 1.0), 0);
 
-        assert_eq!(lerp_len(10, -1.0), 0);
-        assert_eq!(lerp_len(10, 2.0), 9);
+        // Testing out-of-bounds factors.
+        assert_eq!(lerp_idx(0, 10, -1.0), 0);
+        assert_eq!(lerp_idx(0, 10, 2.0), 9);
+        assert_eq!(lerp_idx(0, 10, f32::NAN), 5);
+        assert_eq!(lerp_idx(0, 10, f32::INFINITY), 5);
+        assert_eq!(lerp_idx(0, 10, f32::NEG_INFINITY), 5);
+        assert_eq!(lerp_idx(0, 10, f32::MIN_POSITIVE / 2.0), 5);
+        assert_eq!(lerp_idx(0, 10, f32::MIN_POSITIVE * -1.0 / 2.0), 5);
 
-        assert_eq!(lerp_len(10, f32::NAN), 5);
-        assert_eq!(lerp_len(10, f32::INFINITY), 5);
-        assert_eq!(lerp_len(10, f32::NEG_INFINITY), 5);
+        assert_eq!(lerp_idx(5, 15, 0.0), 5);
+        assert_eq!(lerp_idx(5, 15, 1.0), 14);
+        assert_eq!(lerp_idx(5, 15, 0.5), 10);
 
-        assert_eq!(lerp_len(10, f32::MIN_POSITIVE / 2.0), 5);
-        assert_eq!(lerp_len(10, f32::MIN_POSITIVE * -1.0 / 2.0), 5);
+        assert_eq!(lerp_idx(10, 5, 0.0), 10);
     }
 
     #[test]
