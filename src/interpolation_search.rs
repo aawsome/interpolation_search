@@ -29,6 +29,7 @@ where
     fn interpolation_search(&self, target: &T) -> Result<usize, usize> {
         let mut first_idx = 0;
         let mut last_idx = self.len();
+        let mut bisect = false;
         loop {
             println!("[{first_idx}, {last_idx})");
             match &self[first_idx..last_idx] {
@@ -37,7 +38,12 @@ where
                 [single] if single == target => return Ok(first_idx),
                 [.., last] if last < target => return Err(self.len()),
                 [first, .., last] => {
-                    let f = target.interpolation_factor(&first, &last);
+                    let f = if bisect {
+                        0.5
+                    } else {
+                        target.interpolation_factor(&first, &last)
+                    };
+                    bisect = !bisect;
                     let mid_idx = first_idx + lerp_len(last_idx - first_idx, f);
                     let mid = &self[mid_idx];
                     match mid.cmp(target) {
