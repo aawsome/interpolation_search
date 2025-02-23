@@ -31,9 +31,9 @@ This crate provides and implements the `InterpolationSearch` trait for slices (a
     ```
 ## Enabling Interpolation Search for user-defined types
 
-[`InterpolationSearch`] requires the items in the array to be [`Ord`] and [`InterpolationFactor`].
+`InterpolationSearch` requires the items in the array to be `Ord` and `InterpolationFactor`.
 
-Consider a simple struct that represents points on a cartesian grid, an `(x, y)` pair. To have them sorted in an array they must be [`Ord`], of course, which can be simply derived. Then we implement [`InterpolationFactor`] for this type.
+Consider a simple struct that represents points on a cartesian grid, an `(x, y)` pair. To have them sorted in an array they must be `Ord`, of course, which can be simply derived. Then we implement `InterpolationFactor` for this type.
 
 ```
 use interpolation_search::{InterpolationSearch, InterpolationFactor};
@@ -76,8 +76,8 @@ impl InterpolationFactor for Rgb {
 }
 ```
 
->Note: we couldn't just implement [`InterpolationFactor`] for the tuple `(u8, u8, u8)` as it's a foreign type. We're using the well-known [newtype idiom](https://doc.rust-lang.org/rust-by-example/generics/new_types.html).
+>Note: we couldn't just implement `InterpolationFactor` for the tuple `(u8, u8, u8)` as it's a foreign type. We're using the well-known [newtype idiom](https://doc.rust-lang.org/rust-by-example/generics/new_types.html).
 
 ## Consistency
 
-The [`InterpolationFactor`] property of a type must be consistent with its [`Ord`]. That is, for `a, b, c`, where `a <= b <= c`, `b.interpolation_factor(a, c)` must be in the `[0.0, 1.0]` range.
+The `InterpolationFactor` property of a type must be consistent with its `Ord`. That is, for `a, b, c`, where `a <= b <= c`, `b.interpolation_factor(a, c)` must be in the `[0.0, 1.0]` range.
