@@ -27,31 +27,32 @@ where
     T: Ord + InterpolationFactor,
 {
     fn interpolation_search(&self, target: &T) -> Result<usize, usize> {
-        match self {
-            [] => Err(0),
-            [first, ..] if target < first => Err(0),
-            [single] if single == target => Ok(0),
-            [.., last] if last < target => Err(self.len()),
-            [first, .., last] => {
-                let f = target.interpolation_factor(&first, &last);
-                let mid_idx = lerp_len(self.len(), f);
-                let left = &self[0..mid_idx];
-                let mid = &self[mid_idx];
-                let right = &self[mid_idx + 1..];
-                match (left, mid.cmp(target), right) {
-                    (_, Equal, _) => Ok(mid_idx),
-                    (left, Greater, _) => left.interpolation_search(target),
-                    (_, Less, right) => right
-                        .interpolation_search(target)
-                        .map(|idx| idx + mid_idx + 1)
-                        .map_err(|idx| idx + mid_idx + 1),
+        let mut first_idx = 0;
+        let mut last_idx = self.len();
+        loop {
+            println!("[{first_idx}, {last_idx})");
+            match &self[first_idx..last_idx] {
+                [] => return Err(first_idx),
+                [first, ..] if target < first => return Err(first_idx),
+                [single] if single == target => return Ok(first_idx),
+                [.., last] if last < target => return Err(self.len()),
+                [first, .., last] => {
+                    let f = target.interpolation_factor(&first, &last);
+                    let mid_idx = first_idx + lerp_len(last_idx - first_idx, f);
+                    let mid = &self[mid_idx];
+                    match mid.cmp(target) {
+                        Equal => return Ok(mid_idx),
+                        Greater => last_idx = mid_idx,
+                        Less => first_idx = mid_idx + 1,
+                    }
                 }
+                [_] => return Err(0), // Should not happen if the array is sorted
             }
-            [_] => Err(0), // Should not happen if the array is sorted
         }
     }
 }
 
+// TODO: Replace `lerp_len` with `lerp_idx`.
 fn lerp_len(len: usize, f: f32) -> usize {
     match len {
         0 | 1 => 0,
