@@ -9,3 +9,11 @@ keywords = ["interpolation", "search", "binary", "sorted", "algorithms"]
 categories = ["algorithms", "data-structures"]
 
 [dependencies]
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.9.1"
+
+[[bench]]
+name = "search"
+harness = false
