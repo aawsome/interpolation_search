@@ -1,6 +1,6 @@
 //! **Interpolation search is an algorithm for searching in a sorted array.**
 //!
-//! It improves upon the famous binary search by using linear interpolation to better estimate the targe's position within the array. Interpolation search reduces the asymptotic time complexity of the search to *O(log log N)*. However, in the worst case scenario (array elements grow exponentially) the complexity becomes linear (*O(N)*). This crate uses a trick to reduce the worst-case time complexity to (*O(log N)*) by alternating between using linear interpolation and bisecting to find the "mid" position.
+//! It improves upon the famous binary search by using linear interpolation to better estimate the targe's position within the array. Interpolation search reduces the asymptotic time complexity of the search to *O(log log N)*. However, in the worst case scenario (array elements grow exponentially) the complexity becomes linear (*O(N)*).
 //!
 //! To extend `slice` with the `interpolation_search` method this crate provides, import the `InterpolationSearch` trait. Now the `interpolation_search` method is available on arrays, slices, and `Vec`s:
 //!
