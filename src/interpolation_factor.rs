@@ -80,12 +80,10 @@ impl InterpolationFactor for Chars<'_> {
     fn interpolation_factor(&self, a: &Self, b: &Self) -> f32 {
         match self
             .clone()
-            .into_iter()
-            .zip(a.clone().into_iter())
-            .zip(b.clone().into_iter())
+            .zip(a.clone())
+            .zip(b.clone())
             .map(|((mid, a), b)| (mid, a, b))
-            .filter(|(_, a, b)| a != b)
-            .next()
+            .find(|(_, a, b)| a != b)
         {
             Some((mid, a, b)) => mid.interpolation_factor(&a, &b),
             None => 0.5,
