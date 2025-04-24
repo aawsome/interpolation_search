@@ -18,28 +18,64 @@ pub trait InterpolationSearch<T> {
     ///
     /// assert_eq!(arr.interpolation_search(&13), Ok(9));
     /// assert_eq!(arr.interpolation_search(&14), Err(10));
+    /// assert_eq!(arr.interpolation_search(&4), Err(7));
+    /// assert_eq!(arr.interpolation_search(&100), Err(13));
+    /// assert!(matches!(arr.interpolation_search(&1) , Ok(1..=4)));
     /// ```
-    fn interpolation_search(&self, target: &T) -> Result<usize, usize>;
+    fn interpolation_search(&self, target: &T) -> Result<usize, usize>
+    where
+        T: Ord + InterpolationFactor;
+
+    /// Interpolation searches this slice with a key extaction function. If the slice is not sorted by keys, the returned result is unspecified and meaningless.
+    ///
+    /// The interface of this funciton is similar to its `binary_search_by_key` counterpart. If the value is found then `Result::Ok` is returned, containing the index of the matching element. If there are multiple matches, then any one of the matches could be returned. The index is chosen deterministically, but is subject to change in future versions of the crate. If the value is not found then `Result::Err` is returned, containing the index where a matching element could be inserted while maintaining sorted by key order.
+    ///
+    /// **Examples**
+    ///
+    /// ```
+    /// use interpolation_search::InterpolationSearch;
+    ///
+    /// let s = [(0, 0), (2, 1), (4, 1), (5, 1), (3, 1),
+    ///         (1, 2), (2, 3), (4, 5), (5, 8), (3, 13),
+    ///         (1, 21), (2, 34), (4, 55)];
+    ///
+    /// assert_eq!(s.interpolation_search_by_key(&13, |(a, b)| b),  Ok(9));
+    /// assert_eq!(s.interpolation_search_by_key(&4, |(a, b)| b),   Err(7));
+    /// assert_eq!(s.interpolation_search_by_key(&100, |(a, b)| b), Err(13));
+    /// assert!(matches!(s.interpolation_search_by_key(&1, |(a, b)| b), Ok(1..=4)));
+    /// ```
+    fn interpolation_search_by_key<K, F>(&self, target: &K, f: F) -> Result<usize, usize>
+    where
+        K: Ord + InterpolationFactor,
+        F: FnMut(&T) -> &K;
 }
 
-impl<T> InterpolationSearch<T> for [T]
-where
-    T: Ord + InterpolationFactor,
-{
-    fn interpolation_search(&self, target: &T) -> Result<usize, usize> {
+impl<T> InterpolationSearch<T> for [T] {
+    fn interpolation_search(&self, target: &T) -> Result<usize, usize>
+    where
+        T: Ord + InterpolationFactor,
+    {
+        self.interpolation_search_by_key(target, |x| x)
+    }
+
+    fn interpolation_search_by_key<K, F>(&self, target: &K, mut key: F) -> Result<usize, usize>
+    where
+        K: Ord + InterpolationFactor,
+        F: FnMut(&T) -> &K,
+    {
         let mut first_idx = 0;
         let mut last_idx = self.len();
         loop {
             match &self[first_idx..last_idx] {
                 [] => return Err(first_idx),
-                [first, ..] if target < first => return Err(first_idx),
-                [single] if single == target => return Ok(first_idx),
-                [.., last] if last < target => return Err(self.len()),
+                [first, ..] if target < key(first) => return Err(first_idx),
+                [single] if key(single) == target => return Ok(first_idx),
+                [.., last] if key(last) < target => return Err(last_idx),
                 [first, .., last] => {
-                    let f = target.interpolation_factor(&first, &last);
+                    let f = target.interpolation_factor(key(first), key(last));
                     let mid_idx = lerp_idx(first_idx, last_idx, f);
                     let mid = &self[mid_idx];
-                    match mid.cmp(target) {
+                    match key(mid).cmp(target) {
                         Equal => return Ok(mid_idx),
                         Greater => last_idx = mid_idx,
                         Less => first_idx = mid_idx + 1,
@@ -71,6 +107,13 @@ fn normalize(f: f32) -> f32 {
 mod tests {
     use super::*;
     use std::time::{Duration, SystemTime};
+
+    #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+    struct Item {
+        id: usize,
+        value: i32,
+        name: String,
+    }
 
     #[test]
     fn test_against_binary_search() {
@@ -244,5 +287,277 @@ mod tests {
         assert!(repeated_strings
             .interpolation_search(&"same")
             .is_ok_and(|n| n < 3));
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_tuple() {
+        // Sorted by the second element (i32)
+        let data = [
+            (1, 10),
+            (5, 20),
+            (2, 30),
+            (8, 30), // Duplicate key
+            (3, 40),
+            (7, 50),
+            (4, 60),
+        ];
+
+        // Search for existing keys
+        assert_eq!(data.interpolation_search_by_key(&10, |pair| &pair.1), Ok(0));
+        assert_eq!(data.interpolation_search_by_key(&20, |pair| &pair.1), Ok(1));
+        assert!(matches!(
+            data.interpolation_search_by_key(&30, |pair| &pair.1),
+            Ok(2..=3)
+        ));
+        assert_eq!(data.interpolation_search_by_key(&40, |pair| &pair.1), Ok(4));
+        assert_eq!(data.interpolation_search_by_key(&50, |pair| &pair.1), Ok(5));
+        assert_eq!(data.interpolation_search_by_key(&60, |pair| &pair.1), Ok(6));
+
+        // Search for non-existing keys
+        assert_eq!(data.interpolation_search_by_key(&5, |pair| &pair.1), Err(0)); // Before first
+        assert_eq!(
+            data.interpolation_search_by_key(&15, |pair| &pair.1),
+            Err(1)
+        ); // Between 10 and 20
+        assert_eq!(
+            data.interpolation_search_by_key(&35, |pair| &pair.1),
+            Err(4)
+        ); // Between 30 and 40
+        assert_eq!(
+            data.interpolation_search_by_key(&65, |pair| &pair.1),
+            Err(7)
+        ); // After last
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_struct() {
+        // Sorted by the 'value' field
+        let data = [
+            Item {
+                id: 1,
+                value: 10,
+                name: "apple".to_string(),
+            },
+            Item {
+                id: 5,
+                value: 20,
+                name: "banana".to_string(),
+            },
+            Item {
+                id: 2,
+                value: 30,
+                name: "cherry".to_string(),
+            },
+            Item {
+                id: 8,
+                value: 30,
+                name: "date".to_string(),
+            }, // Duplicate key
+            Item {
+                id: 3,
+                value: 40,
+                name: "elderberry".to_string(),
+            },
+            Item {
+                id: 7,
+                value: 50,
+                name: "fig".to_string(),
+            },
+            Item {
+                id: 4,
+                value: 60,
+                name: "grape".to_string(),
+            },
+        ];
+
+        // Search for existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&10, |item| &item.value),
+            Ok(0)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&20, |item| &item.value),
+            Ok(1)
+        );
+        // Should find either index 2 or 3
+        assert!(matches!(
+            data.interpolation_search_by_key(&30, |item| &item.value),
+            Ok(2..=3)
+        ));
+        assert_eq!(
+            data.interpolation_search_by_key(&40, |item| &item.value),
+            Ok(4)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&50, |item| &item.value),
+            Ok(5)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&60, |item| &item.value),
+            Ok(6)
+        );
+
+        // Search for non-existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&5, |item| &item.value),
+            Err(0)
+        ); // Before first
+        assert_eq!(
+            data.interpolation_search_by_key(&15, |item| &item.value),
+            Err(1)
+        ); // Between 10 and 20
+        assert_eq!(
+            data.interpolation_search_by_key(&35, |item| &item.value),
+            Err(4)
+        ); // Between 30 and 40
+        assert_eq!(
+            data.interpolation_search_by_key(&65, |item| &item.value),
+            Err(7)
+        ); // After last
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_empty() {
+        let data: Vec<Item> = Vec::new();
+        assert_eq!(
+            data.interpolation_search_by_key(&10, |item| &item.value),
+            Err(0)
+        );
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_single() {
+        let data = [Item {
+            id: 1,
+            value: 10,
+            name: "single".to_string(),
+        }];
+        assert_eq!(
+            data.interpolation_search_by_key(&10, |item| &item.value),
+            Ok(0)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&5, |item| &item.value),
+            Err(0)
+        ); // Before
+        assert_eq!(
+            data.interpolation_search_by_key(&15, |item| &item.value),
+            Err(1)
+        ); // After
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_chars() {
+        // Sorted by the char element
+        let data = [
+            (1, 'a'),
+            (2, 'c'),
+            (3, 'f'),
+            (4, 'f'), // Duplicate key
+            (5, 'm'),
+            (6, 'z'),
+        ];
+
+        // Search for existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&'a', |pair| &pair.1),
+            Ok(0)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&'c', |pair| &pair.1),
+            Ok(1)
+        );
+        assert!(matches!(
+            data.interpolation_search_by_key(&'f', |pair| &pair.1),
+            Ok(2..=3)
+        ));
+        assert_eq!(
+            data.interpolation_search_by_key(&'m', |pair| &pair.1),
+            Ok(4)
+        );
+        assert_eq!(
+            data.interpolation_search_by_key(&'z', |pair| &pair.1),
+            Ok(5)
+        );
+
+        // Search for non-existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&'9', |pair| &pair.1),
+            Err(0)
+        ); // Before first ('a')
+        assert_eq!(
+            data.interpolation_search_by_key(&'b', |pair| &pair.1),
+            Err(1)
+        ); // Between 'a' and 'c'
+        assert_eq!(
+            data.interpolation_search_by_key(&'d', |pair| &pair.1),
+            Err(2)
+        ); // Between 'c' and 'f'
+        assert_eq!(
+            data.interpolation_search_by_key(&'g', |pair| &pair.1),
+            Err(4)
+        ); // Between 'f' and 'm'
+        assert_eq!(
+            data.interpolation_search_by_key(&'y', |pair| &pair.1),
+            Err(5)
+        ); // Between 'm' and 'z'
+        assert_eq!(
+            data.interpolation_search_by_key(&'{', |pair| &pair.1),
+            Err(6)
+        ); // After last ('z')
+    }
+
+    #[test]
+    fn test_interpolation_search_by_key_strings() {
+        // Sorted by the string element
+        let data = [
+            (1, "apple"),
+            (2, "banana"),
+            (3, "banana"), // Duplicate key
+            (4, "cherry"),
+            (5, "date"),
+            (6, "date"), // Duplicate key
+            (7, "elderberry"),
+        ];
+
+        // Search for existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&"apple", |pair| &pair.1),
+            Ok(0)
+        );
+        let result_banana = data.interpolation_search_by_key(&"banana", |pair| &pair.1);
+        assert!(result_banana == Ok(1) || result_banana == Ok(2));
+        assert_eq!(
+            data.interpolation_search_by_key(&"cherry", |pair| &pair.1),
+            Ok(3)
+        );
+        let result_date = data.interpolation_search_by_key(&"date", |pair| &pair.1);
+        assert!(result_date == Ok(4) || result_date == Ok(5));
+        assert_eq!(
+            data.interpolation_search_by_key(&"elderberry", |pair| &pair.1),
+            Ok(6)
+        );
+
+        // Search for non-existing keys
+        assert_eq!(
+            data.interpolation_search_by_key(&"apricot", |pair| &pair.1),
+            Err(1)
+        ); // Between apple and banana
+        assert_eq!(
+            data.interpolation_search_by_key(&"blueberry", |pair| &pair.1),
+            Err(3)
+        ); // Between banana and cherry
+        assert_eq!(
+            data.interpolation_search_by_key(&"dragonfruit", |pair| &pair.1),
+            Err(6)
+        ); // Between date and elderberry
+        assert_eq!(
+            data.interpolation_search_by_key(&"zebra", |pair| &pair.1),
+            Err(7)
+        ); // After elderberry
+        assert_eq!(
+            data.interpolation_search_by_key(&"a", |pair| &pair.1),
+            Err(0)
+        ); // Before apple
     }
 }
